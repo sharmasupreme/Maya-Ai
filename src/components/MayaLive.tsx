@@ -96,7 +96,7 @@ export default function MayaLive({ config, setView, isAuthenticated }: MayaLiveP
           outputAudioTranscription: {},
         },
         callbacks: {
-          onopen: () => {
+          onopen: async () => {
             setIsConnected(true);
             setIsRecording(true);
             setStatus("Call Active");
@@ -106,7 +106,17 @@ export default function MayaLive({ config, setView, isAuthenticated }: MayaLiveP
                 audio: { data: base64Data, mimeType: 'audio/pcm;rate=16000' }
               });
             });
-            audioProcessorRef.current.start();
+            
+            try {
+              if (audioPlayerRef.current?.getContext()?.state === 'suspended') {
+                await audioPlayerRef.current.getContext()?.resume();
+              }
+              await audioProcessorRef.current.start();
+            } catch (err) {
+              console.error("Audio initialization failed:", err);
+              setStatus("Microphone access failed");
+              stopCall();
+            }
           },
           onmessage: async (message) => {
             if (message.serverContent?.modelTurn?.parts) {

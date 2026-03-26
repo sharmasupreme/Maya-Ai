@@ -21,7 +21,9 @@ import {
   FileSpreadsheet,
   FileImage,
   File as FileIcon,
-  MessageSquare
+  MessageSquare,
+  Menu as MenuIcon,
+  X
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -42,6 +44,7 @@ type Tab = 'overview' | 'tables' | 'rooms' | 'menus' | 'staff';
 
 export default function Dashboard({ setView }: { setView: (v: any) => void }) {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [tables, setTables] = useState<Table[]>(
     Array.from({ length: 8 }, (_, i) => ({
       id: `t-${i + 1}`,
@@ -136,12 +139,33 @@ export default function Dashboard({ setView }: { setView: (v: any) => void }) {
   };
 
   return (
-    <div className="flex h-[calc(100vh-120px)] bg-gray-50 dark:bg-black rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-800 shadow-xl">
+    <div className="flex flex-col md:flex-row md:h-[calc(100vh-120px)] h-auto w-full max-w-7xl bg-gray-50 dark:bg-black rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-800 shadow-xl relative">
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-bold">M</div>
+          <span className="font-bold dark:text-white">Dashboard</span>
+        </div>
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-2 text-gray-500 dark:text-gray-400"
+        >
+          {isSidebarOpen ? <X /> : <MenuIcon />}
+        </button>
+      </div>
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col p-6">
+      <aside className={`
+        fixed inset-0 z-40 md:relative md:translate-x-0 transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        w-64 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col p-6
+      `}>
         <div className="mb-8">
           <button
-            onClick={() => setView('reception')}
+            onClick={() => {
+              setView('reception');
+              setIsSidebarOpen(false);
+            }}
             className="w-full flex items-center gap-3 px-4 py-4 bg-orange-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-orange-200 dark:shadow-none hover:bg-orange-700 transition-all group mb-8"
           >
             <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -154,31 +178,46 @@ export default function Dashboard({ setView }: { setView: (v: any) => void }) {
               icon={LayoutDashboard} 
               label="Overview" 
               active={activeTab === 'overview'} 
-              onClick={() => setActiveTab('overview')} 
+              onClick={() => {
+                setActiveTab('overview');
+                setIsSidebarOpen(false);
+              }} 
             />
             <SidebarItem 
               icon={TableIcon} 
               label="Tables" 
               active={activeTab === 'tables'} 
-              onClick={() => setActiveTab('tables')} 
+              onClick={() => {
+                setActiveTab('tables');
+                setIsSidebarOpen(false);
+              }} 
             />
             <SidebarItem 
               icon={DoorOpen} 
               label="Rooms" 
               active={activeTab === 'rooms'} 
-              onClick={() => setActiveTab('rooms')} 
+              onClick={() => {
+                setActiveTab('rooms');
+                setIsSidebarOpen(false);
+              }} 
             />
             <SidebarItem 
               icon={FileText} 
               label="Menus" 
               active={activeTab === 'menus'} 
-              onClick={() => setActiveTab('menus')} 
+              onClick={() => {
+                setActiveTab('menus');
+                setIsSidebarOpen(false);
+              }} 
             />
             <SidebarItem 
               icon={Users} 
               label="Staff" 
               active={activeTab === 'staff'} 
-              onClick={() => setActiveTab('staff')} 
+              onClick={() => {
+                setActiveTab('staff');
+                setIsSidebarOpen(false);
+              }} 
             />
           </nav>
         </div>
@@ -188,8 +227,16 @@ export default function Dashboard({ setView }: { setView: (v: any) => void }) {
         </div>
       </aside>
 
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-gray-50/50 dark:bg-black p-8">
+      <main className="flex-1 overflow-y-auto bg-gray-50/50 dark:bg-black p-4 md:p-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -423,23 +470,23 @@ function OverviewView({ tables, rooms, staff, menus, updates, revenueData, occup
 function TablesView({ tables, onAddBulk, onRemoveBulk, onAddSingle }: any) {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Table Management</h1>
           <p className="text-sm text-gray-500">Manage your restaurant layout and seating</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={onRemoveBulk} className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl text-sm font-bold flex items-center gap-2 border border-red-100 dark:border-red-900/30">
+        <div className="flex flex-wrap gap-2">
+          <button onClick={onRemoveBulk} className="flex-1 sm:flex-none px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-red-100 dark:border-red-900/30">
             <Trash2 className="w-4 h-4" />
-            Remove Bulk
+            <span className="whitespace-nowrap">Remove Bulk</span>
           </button>
-          <button onClick={onAddBulk} className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700">
+          <button onClick={onAddBulk} className="flex-1 sm:flex-none px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700">
             <Plus className="w-4 h-4" />
-            Add Bulk (5)
+            <span className="whitespace-nowrap">Add Bulk (5)</span>
           </button>
-          <button onClick={onAddSingle} className="px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-orange-700 shadow-lg shadow-orange-200 dark:shadow-none">
+          <button onClick={onAddSingle} className="w-full sm:w-auto px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-orange-700 shadow-lg shadow-orange-200 dark:shadow-none">
             <Plus className="w-4 h-4" />
-            New Table
+            <span className="whitespace-nowrap">New Table</span>
           </button>
         </div>
       </div>
@@ -469,23 +516,23 @@ function TablesView({ tables, onAddBulk, onRemoveBulk, onAddSingle }: any) {
 function RoomsView({ rooms, onAddBulk, onRemoveBulk, onAddSingle }: any) {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Room Management</h1>
           <p className="text-sm text-gray-500">Manage private cabins and dining rooms</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={onRemoveBulk} className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl text-sm font-bold flex items-center gap-2 border border-red-100 dark:border-red-900/30">
+        <div className="flex flex-wrap gap-2">
+          <button onClick={onRemoveBulk} className="flex-1 sm:flex-none px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-red-100 dark:border-red-900/30">
             <Trash2 className="w-4 h-4" />
-            Remove Bulk
+            <span className="whitespace-nowrap">Remove Bulk</span>
           </button>
-          <button onClick={onAddBulk} className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700">
+          <button onClick={onAddBulk} className="flex-1 sm:flex-none px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700">
             <Plus className="w-4 h-4" />
-            Add Bulk (3)
+            <span className="whitespace-nowrap">Add Bulk (3)</span>
           </button>
-          <button onClick={onAddSingle} className="px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-orange-700 shadow-lg shadow-orange-200 dark:shadow-none">
+          <button onClick={onAddSingle} className="w-full sm:w-auto px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-orange-700 shadow-lg shadow-orange-200 dark:shadow-none">
             <Plus className="w-4 h-4" />
-            New Room
+            <span className="whitespace-nowrap">New Room</span>
           </button>
         </div>
       </div>
@@ -594,22 +641,22 @@ function StaffView({ staff, onDelete, onAdd }: any) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Staff Management</h1>
           <p className="text-sm text-gray-500">Manage your team and their roles</p>
         </div>
         <button 
           onClick={() => setShowAdd(true)}
-          className="px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-orange-700 shadow-lg shadow-orange-200 dark:shadow-none"
+          className="w-full sm:w-auto px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-orange-700 shadow-lg shadow-orange-200 dark:shadow-none"
         >
           <UserPlus className="w-4 h-4" />
           Add Staff
         </button>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
+      <div className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 overflow-x-auto shadow-sm">
+        <table className="w-full text-left border-collapse min-w-[600px]">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800/50">
               <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Name</th>

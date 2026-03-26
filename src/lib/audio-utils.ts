@@ -13,6 +13,9 @@ export class AudioProcessor {
 
   async start() {
     this.audioContext = new AudioContext({ sampleRate: 16000 });
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     this.source = this.audioContext.createMediaStreamSource(this.stream);
     this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
@@ -20,7 +23,15 @@ export class AudioProcessor {
     this.processor.onaudioprocess = (e) => {
       const inputData = e.inputBuffer.getChannelData(0);
       const pcmData = this.floatTo16BitPCM(inputData);
-      const base64Data = btoa(String.fromCharCode(...new Uint8Array(pcmData.buffer)));
+      
+      // Safer base64 conversion for large buffers
+      const uint8Array = new Uint8Array(pcmData.buffer);
+      let binary = '';
+      const len = uint8Array.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64Data = btoa(binary);
       this.onAudioData(base64Data);
     };
 
@@ -54,6 +65,10 @@ export class AudioPlayer {
 
   constructor() {
     this.audioContext = new AudioContext({ sampleRate: 24000 });
+  }
+
+  getContext() {
+    return this.audioContext;
   }
 
   playChunk(base64Data: string) {

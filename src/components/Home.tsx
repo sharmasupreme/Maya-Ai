@@ -25,7 +25,7 @@ export default function Home({ setView }: HomeProps) {
           <div className="inline-block px-4 py-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-xs font-bold uppercase tracking-wider rounded-full">
             The Future of Restaurant Hospitality
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] text-gray-900 dark:text-white">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold leading-[1.1] text-gray-900 dark:text-white">
             Maya: Your AI <br />
             <span className="text-orange-600">Restaurant Host.</span>
           </h1>
