@@ -1,0 +1,5 @@
+{
+  "name": "Maya - Nepali AI Receptionist",
+  "description": "A real-time AI receptionist named Maya that communicates fluently in Nepali, designed for customer interaction.",
+  "requestFramePermissions": ["microphone"]
+}
