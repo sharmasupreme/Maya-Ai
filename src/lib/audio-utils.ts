@@ -9,13 +9,26 @@ export class AudioProcessor {
   private processor: ScriptProcessorNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
 
-  constructor(private onAudioData: (base64Data: string) => void) {}
-
-  async start() {
+  constructor(private onAudioData: (base64Data: string) => void) {
     this.audioContext = new AudioContext({ sampleRate: 16000 });
-    if (this.audioContext.state === 'suspended') {
+  }
+
+  async resume() {
+    if (this.audioContext && this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
+  }
+
+  getContext() {
+    return this.audioContext;
+  }
+
+  async start() {
+    if (!this.audioContext) {
+      this.audioContext = new AudioContext({ sampleRate: 16000 });
+    }
+    await this.resume();
+    
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     this.source = this.audioContext.createMediaStreamSource(this.stream);
     this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
@@ -72,7 +85,13 @@ export class AudioPlayer {
   }
 
   playChunk(base64Data: string) {
-    if (!this.audioContext) return;
+    if (!this.audioContext || this.audioContext.state === 'closed') {
+      this.audioContext = new AudioContext({ sampleRate: 24000 });
+    }
+    
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
 
     const binary = atob(base64Data);
     const bytes = new Uint8Array(binary.length);
@@ -102,7 +121,7 @@ export class AudioPlayer {
     if (this.audioContext && this.audioContext.state !== 'closed') {
       this.audioContext.close().catch(e => console.error("Error closing AudioPlayer context:", e));
     }
-    this.audioContext = new AudioContext({ sampleRate: 24000 });
+    this.audioContext = null;
     this.nextStartTime = 0;
   }
 }

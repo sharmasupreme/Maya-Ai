@@ -72,6 +72,12 @@ export default function MayaLive({ config, setView, isAuthenticated }: MayaLiveP
     }
   }, [commandCount, isAuthenticated]);
 
+  useEffect(() => {
+    return () => {
+      stopCall();
+    };
+  }, []);
+
   const startCall = async () => {
     if (!isAuthenticated && commandCount >= 5) {
       setStatus("Trial ended. Please sign up.");
@@ -80,9 +86,42 @@ export default function MayaLive({ config, setView, isAuthenticated }: MayaLiveP
     }
     try {
       setStatus("Connecting...");
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        console.error("GEMINI_API_KEY is missing from environment variables. Please ensure it is set in your deployment environment (e.g., Vercel Secrets).");
+        setStatus("API Key missing");
+        return;
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      
+      // Initialize audio early in the click handler
       audioPlayerRef.current = new AudioPlayer();
+      audioProcessorRef.current = new AudioProcessor((base64Data) => {
+        if (sessionRef.current) {
+          sessionRef.current.sendRealtimeInput({
+            audio: { data: base64Data, mimeType: 'audio/pcm;rate=16000' }
+          });
+        }
+      });
+
+      // Resume AudioContexts immediately in the click handler to satisfy browser autoplay policies
+      await Promise.all([
+        audioPlayerRef.current.getContext()?.resume(),
+        audioProcessorRef.current.getContext()?.resume()
+      ]);
+
+      // Request microphone access early in the click handler
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // We don't need to keep this stream here, AudioProcessor will request its own
+        stream.getTracks().forEach(track => track.stop());
+      } catch (err) {
+        console.error("Microphone access denied:", err);
+        setStatus("Microphone access failed");
+        return;
+      }
       
       const session = await ai.live.connect({
         model: "gemini-2.5-flash-native-audio-preview-12-2025",
@@ -101,17 +140,8 @@ export default function MayaLive({ config, setView, isAuthenticated }: MayaLiveP
             setIsRecording(true);
             setStatus("Call Active");
             
-            audioProcessorRef.current = new AudioProcessor((base64Data) => {
-              session.sendRealtimeInput({
-                audio: { data: base64Data, mimeType: 'audio/pcm;rate=16000' }
-              });
-            });
-            
             try {
-              if (audioPlayerRef.current?.getContext()?.state === 'suspended') {
-                await audioPlayerRef.current.getContext()?.resume();
-              }
-              await audioProcessorRef.current.start();
+              await audioProcessorRef.current?.start();
             } catch (err) {
               console.error("Audio initialization failed:", err);
               setStatus("Microphone access failed");
@@ -150,9 +180,9 @@ export default function MayaLive({ config, setView, isAuthenticated }: MayaLiveP
             stopCall();
           },
           onerror: (err) => {
-            console.error("Live API Error:", err);
+            console.error("Live API Error Details:", err);
             stopCall();
-            setStatus("Error occurred");
+            setStatus("Error: " + (err instanceof Error ? err.message : "Connection failed"));
           }
         }
       });
